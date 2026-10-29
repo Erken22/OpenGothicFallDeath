@@ -44,9 +44,8 @@ jobs:
       - name: Verify isolated fall-death patch
         shell: bash
         run: |
-          grep -Fq 'bool preserveFallPose = false;' src/common/world/objects/npc.cpp
-          grep -Fq 'changeAttribute(ATR_HITPOINTS,-dmg.value,false,preserveFallPose);' src/common/world/objects/npc.cpp
-          grep -Fq 'if(!preserveDeathAnim)' src/common/world/objects/npc.cpp
+                    grep -Fq 'changeAttribute(ATR_HITPOINTS,-dmg.value,false,true);' src/common/world/objects/npc.cpp
+          grep -Fq 'if(!isFallDamage)' src/common/world/objects/npc.cpp
           echo "FallDeath source verification: PASS"
 
       - uses: actions/setup-java@v5
