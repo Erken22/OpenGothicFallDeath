@@ -671,35 +671,41 @@ replace_once('common/graphics/drawcommands.cpp', '  cmdDurtyBit = false;\n\n  or
 replace_once("common/graphics/shaders.cpp", 'bool Shaders::isRtsmSupported() {\n  if(!Shaders::options().doBindless) {\n    return false;\n    }\n  auto& gpu = Resources::device().properties();\n  if(!gpu.hasStorageFormat(TextureFormat::RG32U) || !gpu.hasStorageFormat(TextureFormat::R11G11B10UF))\n    return false;\n  if(gpu.compute.maxInvocations<512 || gpu.compute.maxSharedMemory<32*1024 || !gpu.descriptors.nonUniformIndexing) {\n    return false;\n    }\n  return true;\n  }\n', "bool Shaders::isRtsmSupported() {\n#if defined(__ANDROID__)\n  // This path was unavailable with Adreno's previous slot-material mode.\n  // Do not eagerly introduce experimental RTSM kernels as a batching side effect.\n  if(isTurnipAdreno650())\n    return false;\n#endif\n  if(!Shaders::options().doBindless) {\n    return false;\n    }\n  auto& gpu = Resources::device().properties();\n  if(!gpu.hasStorageFormat(TextureFormat::RG32U) || !gpu.hasStorageFormat(TextureFormat::R11G11B10UF))\n    return false;\n  if(gpu.compute.maxInvocations<512 || gpu.compute.maxSharedMemory<32*1024 || !gpu.descriptors.nonUniformIndexing) {\n    return false;\n    }\n  return true;\n  }\n")
 
 
-# FALLDEATH: restore original-style lethal fall behavior on top of FIX25.
+# FALLDEATH: preserve the original ZenGin FALL damage semantics on top of FIX25.
+#
+# Gothic II encodes fall damage as oEDamageType_Fall (0x80). Its
+# oCNpc::OnDamage_Anim checks that bit and exits without starting the generic
+# hit/death animation path. OpenGothic calculates fall damage separately but
+# loses that cause when HP reaches zero. Carry the cause through the health
+# transition so only FALL suppresses DeadA/DeadB.
 replace_once(
     "common/world/objects/npc.h",
     "    void       changeAttribute(Attribute a, int32_t val, bool allowUnconscious);\n",
-    "    void       changeAttribute(Attribute a, int32_t val, bool allowUnconscious, bool preserveDeathAnim = false);\n"
+    "    void       changeAttribute(Attribute a, int32_t val, bool allowUnconscious, bool isFallDamage = false);\n"
 )
 replace_once(
     "common/world/objects/npc.h",
     "    bool      checkHealth(bool onChange, bool forceKill);\n"
     "    void      onNoHealth(bool death, HitSound sndMask);\n",
-    "    bool      checkHealth(bool onChange, bool forceKill, bool preserveDeathAnim = false);\n"
-    "    void      onNoHealth(bool death, HitSound sndMask, bool preserveDeathAnim = false);\n"
+    "    bool      checkHealth(bool onChange, bool forceKill, bool isFallDamage = false);\n"
+    "    void      onNoHealth(bool death, HitSound sndMask, bool isFallDamage = false);\n"
 )
 replace_once(
     "common/world/objects/npc.cpp",
     "bool Npc::checkHealth(bool onChange, bool allowUnconscious) {\n",
-    "bool Npc::checkHealth(bool onChange, bool allowUnconscious, bool preserveDeathAnim) {\n"
+    "bool Npc::checkHealth(bool onChange, bool allowUnconscious, bool isFallDamage) {\n"
 )
 replace_once(
     "common/world/objects/npc.cpp",
     "      if(hnpc->attribute[ATR_HITPOINTS]<=0)\n"
     "        onNoHealth(true,HS_Dead);\n",
     "      if(hnpc->attribute[ATR_HITPOINTS]<=0)\n"
-    "        onNoHealth(true,HS_Dead,preserveDeathAnim);\n"
+    "        onNoHealth(true,HS_Dead,isFallDamage);\n"
 )
 replace_once(
     "common/world/objects/npc.cpp",
     "void Npc::onNoHealth(bool death, HitSound sndMask) {\n",
-    "void Npc::onNoHealth(bool death, HitSound sndMask, bool preserveDeathAnim) {\n"
+    "void Npc::onNoHealth(bool death, HitSound sndMask, bool isFallDamage) {\n"
 )
 replace_once(
     "common/world/objects/npc.cpp",
@@ -707,7 +713,10 @@ replace_once(
     "    setAnim(lastHitType=='A' ? Anim::DeadA        : Anim::DeadB); else\n"
     "    setAnim(lastHitType=='A' ? Anim::UnconsciousA : Anim::UnconsciousB);\n",
     "  if(death) {\n"
-    "    if(!preserveDeathAnim)\n"
+    "    // ZenGin oCNpc::OnDamage_Anim suppresses its generic animation path\n"
+    "    // when oEDamageType_Fall (0x80) is set. The movement/fall controller\n"
+    "    // has already selected the appropriate landing pose.\n"
+    "    if(!isFallDamage)\n"
     "      setAnim(lastHitType=='A' ? Anim::DeadA : Anim::DeadB);\n"
     "    } else {\n"
     "    setAnim(lastHitType=='A' ? Anim::UnconsciousA : Anim::UnconsciousB);\n"
@@ -716,12 +725,12 @@ replace_once(
 replace_once(
     "common/world/objects/npc.cpp",
     "void Npc::changeAttribute(Attribute a, int32_t val, bool allowUnconscious) {\n",
-    "void Npc::changeAttribute(Attribute a, int32_t val, bool allowUnconscious, bool preserveDeathAnim) {\n"
+    "void Npc::changeAttribute(Attribute a, int32_t val, bool allowUnconscious, bool isFallDamage) {\n"
 )
 replace_once(
     "common/world/objects/npc.cpp",
     "    checkHealth(true,allowUnconscious);\n",
-    "    checkHealth(true,allowUnconscious,preserveDeathAnim);\n"
+    "    checkHealth(true,allowUnconscious,isFallDamage);\n"
 )
 replace_once(
     "common/world/objects/npc.cpp",
@@ -751,7 +760,6 @@ replace_once(
   }
 ''',
 '''void Npc::takeFallDamage(const Vec3& fallSpeed) {
-  bool preserveFallPose = false;
   if(bodyStateMasked()==BS_FALL) {
     if(!isFallingDeep()) {
       // small fall
@@ -763,7 +771,6 @@ replace_once(
         lastHitType='A'; else
         lastHitType='B';
       setAnim(lastHitType=='A' ? Anim::FallenA : Anim::FallenB);
-      preserveFallPose = true;
       }
     }
   auto dmg = DamageCalculator::damageFall(*this,fallSpeed.length());
@@ -774,9 +781,10 @@ replace_once(
     emitSoundSVM("SVM_%d_AARGH");
     clearState(true);
     }
-  changeAttribute(ATR_HITPOINTS,-dmg.value,false,preserveFallPose);
+  // Preserve the original damage cause through the death transition.
+  changeAttribute(ATR_HITPOINTS,-dmg.value,false,true);
   }
 '''
 )
 
-print("FIX25 + isolated original lethal-fall patch applied")
+print("FIX25 + ZenGin-style FALL damage animation suppression applied")
