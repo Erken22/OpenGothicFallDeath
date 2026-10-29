@@ -44,7 +44,7 @@ jobs:
       - name: Verify isolated fall-death patch
         shell: bash
         run: |
-                    grep -Fq 'changeAttribute(ATR_HITPOINTS,-dmg.value,false,true);' src/common/world/objects/npc.cpp
+          grep -Fq 'changeAttribute(ATR_HITPOINTS,-dmg.value,false,true);' src/common/world/objects/npc.cpp
           grep -Fq 'if(!isFallDamage)' src/common/world/objects/npc.cpp
           echo "FallDeath source verification: PASS"
 
