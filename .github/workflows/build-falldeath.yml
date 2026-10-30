@@ -182,9 +182,9 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: OpenGothic-FIX25-FallDeath-verified
+          name: OpenGothic-FIX25-FallDeath-V10-verified
           path: |
-            GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH.apk
+            GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V10.apk
             apk-sha256.txt
             apk-signature.txt
             apk-badging.txt
@@ -212,5 +212,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release delete fix25-falldeath --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
-          gh release create fix25-falldeath             GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH.apk             apk-badging.txt apk-sha256.txt apk-signature.txt needed.txt vulkan-exports.txt FIX25-native-symbols.tar.gz             --repo "$GITHUB_REPOSITORY"             --target "$GITHUB_SHA"             --title "OpenGothic 0.6.7 FIX25 — isolated original fall death"             --notes "Isolated repository based exactly on FIX25. Preserves FIX25 Turnip/material/rendering behavior and changes only lethal deep-fall death handling: keep the already selected S_FALLEN/S_FALLENB pose instead of starting generic T_DEAD/T_DEADB. Other death sources remain unchanged. Uses an isolated test signing key, so uninstall the main-signed build before installing this APK."             --prerelease
+          gh release delete fix25-falldeath-v10 --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create fix25-falldeath-v10             GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V10.apk             apk-badging.txt apk-sha256.txt apk-signature.txt needed.txt vulkan-exports.txt FIX25-native-symbols.tar.gz             --repo "$GITHUB_REPOSITORY"             --target "$GITHUB_SHA"             --title "OpenGothic 0.6.7 FIX25 — FallDeath V10 slope landing"             --notes "Isolated repository based exactly on FIX25. Preserves FIX25 Turnip/material/rendering behavior and keeps ZenGin FALL death handling and additionally prevents same-frame slope code from overwriting a lethal S_FALLEN/S_FALLENB landing with SLIDE. Other death sources remain unchanged. Uses an isolated test signing key, so uninstall the main-signed build before installing this APK."             --prerelease
