@@ -787,4 +787,15 @@ replace_once(
 '''
 )
 
+# FALLDEATH V10: do not let same-frame slope handling overwrite a lethal
+# FALLEN landing pose with SLIDE. implTick caches 'dead' before takeFallDamage(),
+# so a lethal landing changes npc.isDead() while the cached local remains false.
+# ZenGin evaluates floor sliding separately from the fall/death transition; once
+# the FALL damage killed the NPC, slope handling must not start a new slide anim.
+replace_once(
+    "common/game/movealgo.cpp",
+    "  if(!dead && testSlide(pos,normal,info)) {\n",
+    "  if(!npc.isDead() && testSlide(pos,normal,info)) {\n"
+)
+
 print("FIX25 + ZenGin-style FALL damage animation suppression applied")
