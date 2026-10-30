@@ -798,4 +798,44 @@ replace_once(
     "  if(!npc.isDead() && testSlide(pos,normal,info)) {\n"
 )
 
+
+# FALLDEATH V11: preserve one continuous fall across a steep slide surface.
+# Vanilla zCAIPlayer has STAND/FLY/SWIM/DIVE movement states only; sliding is
+# layered on top of physics. OpenGothic's explicit Slide state previously did:
+# takeFallDamage -> setState(Run) -> clearSpeed -> setState(Slide), which turns
+# a steep-slope contact into a false landing and starts a fresh fall afterwards.
+# Detect the slideable landing first. If it is a slide, keep the current fall
+# velocity and transition directly from InAir/Falling to Slide, so the eventual
+# real landing receives the uninterrupted fall impulse.
+replace_once(
+    "common/game/movealgo.cpp",
+'''  // no longer in air - ground code
+  if(state==InAir || state==Falling) {
+    // attach to ground
+    npc.takeFallDamage(fallSpeed);
+    setState(Run);
+    }
+
+  if(ground+chest < water && !npc.hasSwimAnimations()) {
+''',
+'''  // no longer in air - ground code
+  const bool airLanding      = (state==InAir || state==Falling);
+  const bool airLandingSlide = airLanding && !npc.isDead() && testSlide(pos,normal,info);
+  if(airLanding && !airLandingSlide) {
+    // A real landing ends the fall and applies fall damage.
+    npc.takeFallDamage(fallSpeed);
+    setState(Run);
+    }
+  // On a steep slideable surface keep the fall impulse intact. ZenGin's
+  // CheckFloorSliding is layered on FLY rather than ending the fall first.
+
+  if(ground+chest < water && !npc.hasSwimAnimations()) {
+'''
+)
+replace_once(
+    "common/game/movealgo.cpp",
+    "  if(!npc.isDead() && testSlide(pos,normal,info)) {\n",
+    "  if(!npc.isDead() && (airLandingSlide || testSlide(pos,normal,info))) {\n"
+)
+
 print("FIX25 + ZenGin-style FALL damage animation suppression applied")
