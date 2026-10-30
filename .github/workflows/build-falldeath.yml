@@ -1,4 +1,4 @@
-name: Build OpenGothic 0.6.7 FIX25 FallDeath
+name: Build OpenGothic 0.6.7 FIX25 FallDeath V10
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: opengothic-fix25-falldeath
+  group: opengothic-fix25-falldeath-v10
   cancel-in-progress: true
 
 permissions:
@@ -46,6 +46,7 @@ jobs:
         run: |
           grep -Fq 'changeAttribute(ATR_HITPOINTS,-dmg.value,false,true);' src/common/world/objects/npc.cpp
           grep -Fq 'if(!isFallDamage)' src/common/world/objects/npc.cpp
+          grep -Fq 'if(!npc.isDead() && testSlide(pos,normal,info))' src/common/game/movealgo.cpp
           echo "FallDeath source verification: PASS"
 
       - uses: actions/setup-java@v5
@@ -85,7 +86,7 @@ jobs:
         run: |
           {
             echo '#pragma once'
-            echo 'static const char* appBuild = "OpenGothic 0.6.7 FIX25 FallDeath";'
+            echo 'static const char* appBuild = "OpenGothic 0.6.7 FIX25 FallDeath V10";'
           } > src/game/build.h
 
       - name: Configure Android ARM64
@@ -111,7 +112,7 @@ jobs:
           done < <(find src/build/android -path '*/build/outputs/apk/*/*.apk' -type f | sort)
           test -n "$APK"
 
-          OUT="GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH.apk"
+          OUT="GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V10.apk"
           # Isolated repository: use its own ephemeral test signing key.
           # This intentionally cannot install over the main FIX25/FIX26 builds.
           keytool -genkeypair -noprompt             -keystore falldeath-test.keystore             -storepass android -keypass android             -alias falldeath             -keyalg RSA -keysize 2048 -validity 3650             -dname "CN=OpenGothic FallDeath Test,O=Local Test,C=KZ"
@@ -152,7 +153,7 @@ jobs:
             exit 1
           fi
 
-          strings packaged-libopengothic.so | grep -F "OpenGothic 0.6.7 FIX25 FallDeath"
+          strings packaged-libopengothic.so | grep -F "OpenGothic 0.6.7 FIX25 FallDeath V10"
           strings packaged-libopengothic.so | grep -F "FIX23 fence waits: Turnip Adreno 650 uses targeted native completion"
           strings packaged-libopengothic.so | grep -F "Shadow startup: standard shadow maps; unrequested virtual shadow pipelines skipped"
           strings packaged-libopengothic.so | grep -F "FIX25 material mode:"
