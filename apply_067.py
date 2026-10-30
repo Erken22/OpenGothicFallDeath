@@ -910,3 +910,94 @@ replace_once(
 )
 
 print("FALLDEATH V13: airborne slope keeps FLY/FALL state; slide is animation/constraint only")
+
+# V14-DIAG is instrumentation ONLY, retaining V13 movement physics.
+# Log decisions in the player's fall/slide pipeline, including collisions
+# before the floor ray, allowing comparisons with the PC reference.
+replace_once(
+    "common/game/movealgo.cpp",
+'''  DynamicWorld::CollisionTest info;
+  if(!tryMove(dp,info)) {
+    info.preFall = false;
+''',
+'''  DynamicWorld::CollisionTest info;
+  const bool fallTraceMoveOk = tryMove(dp,info);
+  if(!fallTraceMoveOk) {
+    if(npc.isPlayer() && (grav || state==Slide || state==Run)) {
+      Tempest::Log::i("FALLTRACE14 collision state=",int(state),
+                      " pos=",pos0.x,",",pos0.y,",",pos0.z,
+                      " dp=",dp.x,",",dp.y,",",dp.z,
+                      " colNorm=",info.normal.x,",",info.normal.y,",",info.normal.z,
+                      " vel=",fallSpeed.x,",",fallSpeed.y,",",fallSpeed.z);
+      }
+    info.preFall = false;
+'''
+)
+replace_once(
+    "common/game/movealgo.cpp",
+'''  float dY      = pos.y-ground;
+
+  if(canFlyOverWater() && ground<water) {
+''',
+'''  float dY      = pos.y-ground;
+
+  if(npc.isPlayer() && (state!=Run || normal.y<0.97f)) {
+    static uint64_t lastFallTrace14 = 0;
+    const auto now = npc.world().tickCount();
+    if(now>=lastFallTrace14+100 || now<lastFallTrace14) {
+      lastFallTrace14 = now;
+      Tempest::Log::i("FALLTRACE14 sample state=",int(state),
+                      " moveOk=",int(fallTraceMoveOk)," groundOk=",int(gValid),
+                      " pos=",pos.x,",",pos.y,",",pos.z,
+                      " ground=",ground," dY=",dY,
+                      " norm=",normal.x,",",normal.y,",",normal.z,
+                      " vel=",fallSpeed.x,",",fallSpeed.y,",",fallSpeed.z,
+                      " bs=",int(bs)," hp=",npc.attribute(ATR_HITPOINTS));
+      }
+    }
+
+  if(canFlyOverWater() && ground<water) {
+'''
+)
+replace_once(
+    "common/game/movealgo.cpp",
+'''  const bool airLandingSlide = airLanding && !npc.isDead() && testSlide(pos,normal,info);
+  if(airLandingSlide) {
+''',
+'''  const bool airLandingSlide = airLanding && !npc.isDead() && testSlide(pos,normal,info);
+  if(npc.isPlayer() && airLanding) {
+    Tempest::Log::i("FALLTRACE14 landing slide=",int(airLandingSlide),
+                    " state=",int(state)," ground=",ground," dY=",dY,
+                    " normY=",normal.y," vel=",fallSpeed.x,",",fallSpeed.y,",",fallSpeed.z);
+    }
+  if(airLandingSlide) {
+'''
+)
+replace_once(
+    "common/game/movealgo.cpp",
+'''    // A real landing ends the fall and applies fall damage.
+    npc.takeFallDamage(fallSpeed);
+    setState(Run);
+''',
+'''    // A real landing ends the fall and applies fall damage.
+    if(npc.isPlayer())
+      Tempest::Log::i("FALLTRACE14 takeFallDamage velocity=",fallSpeed.x,",",fallSpeed.y,",",fallSpeed.z);
+    npc.takeFallDamage(fallSpeed);
+    setState(Run);
+'''
+)
+replace_once(
+    "common/game/movealgo.cpp",
+'''    setState(Slide);
+    return true;
+    }
+''',
+'''    if(npc.isPlayer())
+      Tempest::Log::i("FALLTRACE14 setSlide prev=",int(state)," normY=",normal.y," dY=",dY);
+    setState(Slide);
+    return true;
+    }
+'''
+)
+print("FALLTRACE14 diagnostic logging enabled; movement physics unchanged from V13")
+
