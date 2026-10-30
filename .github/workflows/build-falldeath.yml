@@ -1,4 +1,4 @@
-name: Build OpenGothic 0.6.7 FIX25 FallDeath V11
+name: Build OpenGothic 0.6.7 FIX25 FallDeath V12
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: opengothic-fix25-falldeath-v11
+  group: opengothic-fix25-falldeath-v12
   cancel-in-progress: true
 
 permissions:
@@ -100,7 +100,7 @@ jobs:
         run: |
           {
             echo '#pragma once'
-            echo 'static const char* appBuild = "OpenGothic 0.6.7 FIX25 FallDeath V11";'
+            echo 'static const char* appBuild = "OpenGothic 0.6.7 FIX25 FallDeath V12";'
           } > src/game/build.h
 
       - name: Configure Android ARM64
@@ -126,7 +126,7 @@ jobs:
           done < <(find src/build/android -path '*/build/outputs/apk/*/*.apk' -type f | sort)
           test -n "$APK"
 
-          OUT="GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V11.apk"
+          OUT="GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V12.apk"
           # Isolated repository: use its own ephemeral test signing key.
           # This intentionally cannot install over the main FIX25/FIX26 builds.
           keytool -genkeypair -noprompt             -keystore falldeath-test.keystore             -storepass android -keypass android             -alias falldeath             -keyalg RSA -keysize 2048 -validity 3650             -dname "CN=OpenGothic FallDeath Test,O=Local Test,C=KZ"
@@ -167,7 +167,7 @@ jobs:
             exit 1
           fi
 
-          strings packaged-libopengothic.so | grep -F "OpenGothic 0.6.7 FIX25 FallDeath V11"
+          strings packaged-libopengothic.so | grep -F "OpenGothic 0.6.7 FIX25 FallDeath V12"
           strings packaged-libopengothic.so | grep -F "FIX23 fence waits: Turnip Adreno 650 uses targeted native completion"
           strings packaged-libopengothic.so | grep -F "Shadow startup: standard shadow maps; unrequested virtual shadow pipelines skipped"
           strings packaged-libopengothic.so | grep -F "FIX25 material mode:"
@@ -196,9 +196,9 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: OpenGothic-FIX25-FallDeath-V11-verified
+          name: OpenGothic-FIX25-FallDeath-V12-verified
           path: |
-            GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V11.apk
+            GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V12.apk
             apk-sha256.txt
             apk-signature.txt
             apk-badging.txt
@@ -226,5 +226,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release delete fix25-falldeath-v11 --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
-          gh release create fix25-falldeath-v11             GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V11.apk             apk-badging.txt apk-sha256.txt apk-signature.txt needed.txt vulkan-exports.txt FIX25-native-symbols.tar.gz             --repo "$GITHUB_REPOSITORY"             --target "$GITHUB_SHA"             --title "OpenGothic 0.6.7 FIX25 — FallDeath V11 continuous slope fall"             --notes "Isolated repository based exactly on FIX25. Preserves FIX25 Turnip/material/rendering behavior and keeps ZenGin FALL death handling and additionally prevents same-frame slope code from overwriting a lethal S_FALLEN/S_FALLENB landing with SLIDE. Other death sources remain unchanged. Uses an isolated test signing key, so uninstall the main-signed build before installing this APK."             --prerelease
+          gh release delete fix25-falldeath-v12 --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create fix25-falldeath-v12             GothicLauncher-arm64-OpenGothic067-FIX25-FALLDEATH-V12.apk             apk-badging.txt apk-sha256.txt apk-signature.txt needed.txt vulkan-exports.txt FIX25-native-symbols.tar.gz             --repo "$GITHUB_REPOSITORY"             --target "$GITHUB_SHA"             --title "OpenGothic 0.6.7 FIX25 — FallDeath V12 continuous slope fall"             --notes "Isolated repository based exactly on FIX25. Preserves FIX25 Turnip/material/rendering behavior and keeps ZenGin FALL death handling and additionally prevents same-frame slope code from overwriting a lethal S_FALLEN/S_FALLENB landing with SLIDE. Other death sources remain unchanged. Uses an isolated test signing key, so uninstall the main-signed build before installing this APK."             --prerelease
