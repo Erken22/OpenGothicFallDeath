@@ -837,5 +837,15 @@ replace_once(
     "  if(!npc.isDead() && testSlide(pos,normal,info)) {\n",
     "  if(!npc.isDead() && (airLandingSlide || testSlide(pos,normal,info))) {\n"
 )
+replace_once(
+    "common/game/movealgo.cpp",
+    "    if(state!=InAir && Tempest::Vec3::dotProduct(normal,dp)<0.45f) {\n",
+    "    if(!airLandingSlide && state!=InAir && Tempest::Vec3::dotProduct(normal,dp)<0.45f) {\n"
+)
+replace_once(
+    "common/game/movealgo.cpp",
+    "    if(state==InAir && ground>=pos.y) {\n",
+    "    if(airLandingSlide && ground>=pos.y) {\n"
+)
 
 print("FIX25 + ZenGin-style FALL damage animation suppression applied")
