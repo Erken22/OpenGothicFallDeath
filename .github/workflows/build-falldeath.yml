@@ -165,7 +165,7 @@ jobs:
             exit 1
           fi
 
-          strings packaged-libopengothic.so | grep -F "OpenGothic 0.6.7 FIX25 FallDeath V10"
+          strings packaged-libopengothic.so | grep -F "OpenGothic 0.6.7 FIX25 FallDeath V11"
           strings packaged-libopengothic.so | grep -F "FIX23 fence waits: Turnip Adreno 650 uses targeted native completion"
           strings packaged-libopengothic.so | grep -F "Shadow startup: standard shadow maps; unrequested virtual shadow pipelines skipped"
           strings packaged-libopengothic.so | grep -F "FIX25 material mode:"
