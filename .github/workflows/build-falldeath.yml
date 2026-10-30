@@ -48,6 +48,8 @@ jobs:
           grep -Fq 'if(!isFallDamage)' src/common/world/objects/npc.cpp
           grep -Fq 'if(!npc.isDead() && (airLandingSlide || testSlide(pos,normal,info)))' src/common/game/movealgo.cpp
           grep -Fq 'const bool airLandingSlide = airLanding && !npc.isDead() && testSlide(pos,normal,info);' src/common/game/movealgo.cpp
+          grep -Fq 'if(!airLandingSlide && state!=InAir && Tempest::Vec3::dotProduct(normal,dp)<0.45f)' src/common/game/movealgo.cpp
+          grep -Fq 'if(airLandingSlide && ground>=pos.y)' src/common/game/movealgo.cpp
           echo "FallDeath source verification: PASS"
 
       - uses: actions/setup-java@v5
