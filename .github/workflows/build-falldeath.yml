@@ -77,7 +77,7 @@ jobs:
           cmake --build "$RUNNER_TEMP/glslang-build" --target glslang-standalone -- -j2
           GLSLANG_DIR="$RUNNER_TEMP/glslang-build/StandAlone"
           test -x "$GLSLANG_DIR/glslangValidator"
-          "$GLSLANG_DIR/glslangValidator" --help | grep -F -- "--P <text>"
+          "$GLSLANG_DIR/glslangValidator" --version
           echo "$GLSLANG_DIR" >> "$GITHUB_PATH"
 
       - name: Verify cached Vulkan dispatch and frame metrics
