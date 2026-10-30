@@ -849,3 +849,64 @@ replace_once(
 )
 
 print("FIX25 + ZenGin-style FALL damage animation suppression applied")
+
+
+# FALLDEATH V13: ZenGin-style airborne slide overlay.
+# Vanilla zCAIPlayer keeps FLY while CheckFloorSliding starts S_SLIDE/S_SLIDEB
+# and hands the existing velocity to rigid-body physics. Do not convert an
+# airborne slope contact into OpenGothic's standalone Slide state.
+replace_once(
+    "common/game/movealgo.cpp",
+    "    if(!airLandingSlide && state!=InAir && Tempest::Vec3::dotProduct(normal,dp)<0.45f) {\n",
+    "    if(state!=InAir && Tempest::Vec3::dotProduct(normal,dp)<0.45f) {\n"
+)
+replace_once(
+    "common/game/movealgo.cpp",
+    "    if(airLandingSlide && ground>=pos.y) {\n",
+    "    if(state==InAir && ground>=pos.y) {\n"
+)
+replace_once(
+    "common/game/movealgo.cpp",
+    "  if(!npc.isDead() && (airLandingSlide || testSlide(pos,normal,info))) {\n",
+    "  if(!npc.isDead() && testSlide(pos,normal,info)) {\n"
+)
+replace_once(
+    "common/game/movealgo.cpp",
+'''  if(airLanding && !airLandingSlide) {
+    // A real landing ends the fall and applies fall damage.
+    npc.takeFallDamage(fallSpeed);
+    setState(Run);
+    }
+  // On a steep slideable surface keep the fall impulse intact. ZenGin's
+  // CheckFloorSliding is layered on FLY rather than ending the fall first.
+
+  if(ground+chest < water && !npc.hasSwimAnimations()) {
+''',
+'''  if(airLandingSlide) {
+    // ZenGin CheckFloorSliding keeps zMV_STATE_FLY and transfers the current
+    // velocity to rigid-body sliding. Keep Falling/InAir here as well.
+    // Constrain only the velocity component entering the slope; gravity was
+    // already integrated above, so projecting it onto the plane naturally
+    // produces downhill acceleration without a second gravity term.
+    const float vn = Tempest::Vec3::dotProduct(fallSpeed,normal);
+    if(vn<0.f)
+      fallSpeed -= normal*vn;
+
+    npc.setAnimRotate(0);
+    if(slideDir())
+      npc.setAnim(AnimationSolver::SlideA); else
+      npc.setAnim(AnimationSolver::SlideB);
+    return true;
+    }
+
+  if(airLanding) {
+    // A real landing ends the fall and applies fall damage.
+    npc.takeFallDamage(fallSpeed);
+    setState(Run);
+    }
+
+  if(ground+chest < water && !npc.hasSwimAnimations()) {
+'''
+)
+
+print("FALLDEATH V13: airborne slope keeps FLY/FALL state; slide is animation/constraint only")
