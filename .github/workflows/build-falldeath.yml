@@ -69,6 +69,17 @@ jobs:
           sudo apt-get install -y glslang-tools ninja-build
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"             "platforms;android-35"             "build-tools;35.0.0"             "ndk;27.0.12077973"             "cmake;3.22.1"
 
+          # Ubuntu 22.04 ships glslang 11.8, which lacks OpenGothic's
+          # required shader preamble option (--P). Build the official
+          # Khronos 13.1.1 standalone validator from source instead.
+          git clone --depth 1 --branch 13.1.1 https://github.com/KhronosGroup/glslang.git "$RUNNER_TEMP/glslang-src"
+          cmake -S "$RUNNER_TEMP/glslang-src" -B "$RUNNER_TEMP/glslang-build" -G Ninja             -DCMAKE_BUILD_TYPE=Release             -DENABLE_OPT=OFF             -DENABLE_SPVREMAPPER=OFF             -DGLSLANG_TESTS=OFF
+          cmake --build "$RUNNER_TEMP/glslang-build" --target glslang-standalone -- -j2
+          GLSLANG_DIR="$RUNNER_TEMP/glslang-build/StandAlone"
+          test -x "$GLSLANG_DIR/glslangValidator"
+          "$GLSLANG_DIR/glslangValidator" --help | grep -F -- "--P <text>"
+          echo "$GLSLANG_DIR" >> "$GITHUB_PATH"
+
       - name: Verify cached Vulkan dispatch and frame metrics
         run: |
           python3 ci/test_vulkan_namespace.py Vulkan-Headers
